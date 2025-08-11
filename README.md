@@ -43,10 +43,9 @@ L’objectif est d’**améliorer une application web Flask** en optimisant la q
    ```
 
 ## ⚠️ Licence et utilisation
-```
+
 Copyright (c) 2025 Sébastien Grison  
 Tous droits réservés.
 
 Ce code est fourni uniquement à titre éducatif dans le cadre d’un projet de la formation OpenClassrooms « Développeur d'application Python ».  
 Toute reproduction, modification, redistribution ou utilisation de ce code, totale ou partielle, à des fins autres que personnelles et éducatives, est strictement interdite sans autorisation écrite préalable de l’auteur.
-```
