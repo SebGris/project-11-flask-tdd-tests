@@ -47,13 +47,14 @@ L’objectif est d’**améliorer une application web Flask** en optimisant la q
 ### Erreur "Could not locate a Flask application"
 Error: Could not locate a Flask application. You did not provide the "FLASK_APP" environment variable, and a "wsgi.py" or "app.py" module was not found in the current directory.
 ### Solution
-Pour lancer votre application, il faut définir la variable d’environnement FLASK_APP à server.py avant d’exécuter la commande flask run.
+Depuis Flask 2.2, il est recommandé d’utiliser l’option --app pour préciser le module de l’application.
 Activer l'environnement virtuel, puis tapez :
 
 ```bash
-set FLASK_APP=server.py
-flask run
+python -m flask --app server run
 ```
+
+http://127.0.0.1:5000/
 
 ## ⚠️ Licence et utilisation
 

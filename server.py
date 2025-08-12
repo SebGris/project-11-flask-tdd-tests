@@ -20,6 +20,8 @@ app.secret_key = 'something_special'
 competitions = loadCompetitions()
 clubs = loadClubs()
 
+print(clubs)
+
 @app.route('/')
 def index():
     return render_template('index.html')
