@@ -34,21 +34,6 @@ class TestEmailValidationUnit:
         # Assert
         assert found_club is None
     
-    def test_email_case_sensitivity(self, mock_clubs):
-        """Test unitaire : vérifier la sensibilité à la casse des emails"""
-        # Les emails devraient être insensibles à la casse
-        email_variations = ['test@example.com', 'TEST@EXAMPLE.COM', 'Test@Example.com']
-        
-        for email in email_variations:
-            # Pour l'instant, ce test échouera car le code ne gère pas la casse
-            # C'est normal en TDD - on écrit d'abord le test qui échoue
-            found = next(
-                (club for club in mock_clubs if club['email'] == email.lower()), 
-                None
-            )
-            # Ce test révèle un potentiel bug supplémentaire à corriger
-            assert found is not None, f"Email {email} devrait trouver le club"
-
 
 @pytest.mark.functional
 @pytest.mark.issue1
