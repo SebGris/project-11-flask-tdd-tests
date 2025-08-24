@@ -51,22 +51,26 @@ def show_summary():
     Returns:
         str: Rendered HTML template for welcome page or redirect to index
     """
+    email = request.form.get('email')
+    
+    # Cas 1 : Email manquant ou vide
+    if not email:
+        flash("Veuillez saisir une adresse e-mail.")
+        return redirect(url_for('index'))
+    
+    # Rechercher le club
     club_list = [
         club for club in clubs
-        if club['email'] == request.form['email']
+        if club['email'] == email
     ]
 
+    # Cas 2 : Email fourni mais inexistant
     if not club_list:
         flash("Désolé, cette adresse e-mail est introuvable.")
         return redirect(url_for('index'))
 
     club = club_list[0]
-    return render_template(
-        'welcome.html',
-        club=club,
-        competitions=competitions
-    )
-
+    return render_template('welcome.html', club=club, competitions=competitions)
 
 @app.route('/book/<competition>/<club>')
 def book(competition, club):

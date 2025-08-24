@@ -82,15 +82,13 @@ class TestEmailValidationFunctional:
     
     def test_empty_email_field(self, client):
         """Test fonctionnel : champ email vide"""
-        # Act
         response = client.post('/showSummary',
-                              data={'email': ''},
-                              follow_redirects=True)
+                            data={'email': ''},
+                            follow_redirects=True)
         
-        # Assert
         assert response.status_code == 200
-        # Doit gérer le cas sans planter
-        assert b'error' in response.data.lower() or b'introuvable' in response.data
+        # Nouveau message pour email vide
+        assert b'Veuillez saisir une adresse e-mail' in response.data
     
     def test_missing_email_parameter(self, client):
         """Test fonctionnel : paramètre email manquant dans la requête"""
