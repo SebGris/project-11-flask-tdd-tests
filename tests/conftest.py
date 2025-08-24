@@ -136,6 +136,17 @@ def reset_app_state():
     # Nettoyage après le test si nécessaire
 
 
+@pytest.fixture(autouse=True)
+def clear_session(client):
+    """Nettoie la session Flask entre chaque test."""
+    with client.session_transaction() as session:
+        session.clear()
+    yield
+    # Nettoyer aussi après le test si nécessaire
+    with client.session_transaction() as session:
+        session.clear()
+
+
 # Marqueurs personnalisés pour organiser les tests
 def pytest_configure(config):
     """Configure les marqueurs personnalisés pour pytest."""
