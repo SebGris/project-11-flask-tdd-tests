@@ -71,19 +71,19 @@ def show_summary():
 
 @app.route('/book/<competition>/<club>')
 def book(competition,club):
-    foundClub = [c for c in clubs if c['name'] == club][0]
-    foundCompetition = [c for c in competitions if c['name'] == competition][0]
+    selected_club = [c for c in clubs if c['name'] == club][0]
+    selected_competition = [c for c in competitions if c['name'] == competition][0]
     
-    if foundClub and foundCompetition:
+    if selected_club and selected_competition:
         # FIX ISSUE #5: Check if competition is in the past
-        if is_competition_past(foundCompetition['date']):
+        if is_competition_past(selected_competition['date']):
             flash("Sorry, this competition has already taken place and cannot be booked.")
             return render_template('welcome.html', 
-                                 club=foundClub, 
+                                 club=selected_club, 
                                  competitions=competitions,
                                  is_past=is_competition_past)
         
-        return render_template('booking.html',club=foundClub,competition=foundCompetition)
+        return render_template('booking.html',club=selected_club,competition=selected_competition)
     else:
         flash("Something went wrong-please try again")
         return render_template('welcome.html', 
