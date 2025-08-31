@@ -75,14 +75,27 @@ def showSummary():
     
     # Get the club (we know it exists now)
     club = matching_clubs[0]
+
+    competitions_with_status = []
+    for comp in competitions:
+        comp_copy = comp.copy()
+        comp_copy['is_past'] = is_competition_past(comp)
+        competitions_with_status.append(comp_copy)
     
-    return render_template('welcome.html',club=club,competitions=competitions)
+    return render_template('welcome.html', 
+                         club=club, 
+                         competitions=competitions_with_status)
 
 
 @app.route('/book/<competition>/<club>')
 def book(competition,club):
     foundClub = [c for c in clubs if c['name'] == club][0]
     foundCompetition = [c for c in competitions if c['name'] == competition][0]
+
+    if is_competition_past(foundCompetition):
+        flash("Cannot book places for past competitions")
+        return redirect(url_for('index'))
+    
     if foundClub and foundCompetition:
         return render_template('booking.html',club=foundClub,competition=foundCompetition)
     else:
@@ -94,6 +107,11 @@ def book(competition,club):
 def purchasePlaces():
     competition = [c for c in competitions if c['name'] == request.form['competition']][0]
     club = [c for c in clubs if c['name'] == request.form['club']][0]
+    
+    if is_competition_past(competition):
+        flash("Cannot book places for past competitions")
+        return redirect(url_for('index'))
+    
     placesRequired = int(request.form['places'])
     competition['numberOfPlaces'] = int(competition['numberOfPlaces'])-placesRequired
     flash('Great-booking complete!')

@@ -5,7 +5,14 @@ import pytest
 # Ajouter le répertoire parent au path Python pour importer server
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + '/..'))
 
-# À AJOUTER à la fin de tests/conftest.py :
+from server import app
+
+@pytest.fixture
+def client():
+    """Client de test Flask pour les tests d'intégration"""
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        yield client
 
 @pytest.fixture
 def past_competition():
