@@ -1,6 +1,6 @@
 import json
 from flask import Flask,render_template,request,redirect,flash,url_for
-
+from datetime import datetime
 
 def loadClubs():
     with open('clubs.json') as c:
@@ -37,6 +37,12 @@ def validate_email_input(email):
         bool: True if email is valid, False otherwise
     """
     return bool(email and str(email).strip())
+
+
+def is_competition_past(competition):
+    """Vérifie si une compétition est passée."""
+    competition_date = datetime.strptime(competition['date'], '%Y-%m-%d %H:%M:%S')
+    return competition_date < datetime.now()
 
 
 app = Flask(__name__)
