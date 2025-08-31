@@ -27,6 +27,18 @@ def find_club_by_email(email, clubs_list):
     return next((club for club in clubs_list if club['email'] == email), None)
 
 
+def validate_email_input(email):
+    """Validate that email is present and not empty.
+    
+    Args:
+        email: Email string to validate
+        
+    Returns:
+        bool: True if email is valid, False otherwise
+    """
+    return bool(email and str(email).strip())
+
+
 app = Flask(__name__)
 app.secret_key = 'something_special'
 
