@@ -14,6 +14,19 @@ def loadCompetitions():
          return listOfCompetitions
 
 
+def find_club_by_email(email, clubs_list):
+    """Find a club by email address.
+    
+    Args:
+        email: Email address to search for
+        clubs_list: List of club dictionaries
+        
+    Returns:
+        dict or None: The found club or None if not found
+    """
+    return next((club for club in clubs_list if club['email'] == email), None)
+
+
 app = Flask(__name__)
 app.secret_key = 'something_special'
 
