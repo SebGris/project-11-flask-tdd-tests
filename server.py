@@ -51,7 +51,25 @@ def index():
 
 @app.route('/showSummary',methods=['POST'])
 def showSummary():
-    club = [club for club in clubs if club['email'] == request.form['email']][0]
+    # Get email from form
+    email = request.form.get('email')
+    
+    # Check if email is provided
+    if not email:
+        flash("Veuillez entrer une adresse e-mail.")
+        return redirect(url_for('index'))
+    
+    # Try to find the club with this email
+    matching_clubs = [club for club in clubs if club['email'] == email]
+    
+    # Check if club exists
+    if not matching_clubs:
+        flash("Désolé, cette adresse e-mail est introuvable.")
+        return redirect(url_for('index'))
+    
+    # Get the club (we know it exists now)
+    club = matching_clubs[0]
+    
     return render_template('welcome.html',club=club,competitions=competitions)
 
 
