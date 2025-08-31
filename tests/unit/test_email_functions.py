@@ -57,3 +57,19 @@ class TestValidateEmailInput:
         
         # Assert
         assert is_valid is True
+
+    def test_empty_string_email(self):
+        """Test: email chaîne vide"""
+        # Act
+        is_valid = validate_email_input('')
+        
+        # Assert
+        assert is_valid is False
+    
+    def test_none_email(self):
+        """Test: email None"""
+        # Act
+        is_valid = validate_email_input(None)
+        
+        # Assert
+        assert is_valid is False
