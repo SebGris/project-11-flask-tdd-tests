@@ -31,3 +31,16 @@ class TestFindClubByEmail:
         assert result is not None
         assert result['name'] == 'Test Club'
         assert result['email'] == 'test@example.com'
+
+    def test_find_nonexistent_club(self):
+        """Test: retourne None si le club n'existe pas"""
+        # Arrange
+        clubs = [
+            {'name': 'Test Club', 'email': 'test@example.com', 'points': '10'}
+        ]
+        
+        # Act
+        result = find_club_by_email('notfound@example.com', clubs)
+        
+        # Assert
+        assert result is None
