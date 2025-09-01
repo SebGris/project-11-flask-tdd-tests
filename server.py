@@ -40,7 +40,14 @@ def validate_email_input(email):
 
 
 def is_competition_past(competition):
-    """Vérifie si une compétition est passée."""
+    """Check if a competition is in the past.
+    
+    Args:
+        competition: Competition dictionary with 'date' key
+        
+    Returns:
+        bool: True if competition is past, False otherwise
+    """
     competition_date = datetime.strptime(competition['date'], '%Y-%m-%d %H:%M:%S')
     return competition_date < datetime.now()
 
