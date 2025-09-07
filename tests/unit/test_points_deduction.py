@@ -1,9 +1,13 @@
-# Version 1 : Simple mais fragile
-def test_points_deducted_after_booking(client):
-    """Premier test - accepte qu'il soit fragile"""
+# Version 2 : Améliorée après que ça marche
+def test_points_calculation_is_correct(client):
+    """Test refactorisé - plus robuste"""
+    initial_points = 13  # Documenté explicitement
+    places_booked = 3
+    expected_points = initial_points - places_booked
+    
     response = client.post('/purchasePlaces',
                           data={'competition': 'Spring Festival',
                                 'club': 'Simply Lift', 
-                                'places': '3'})
+                                'places': str(places_booked)})
     
-    assert b'Points available: 10' in response.data  # Hardcodé
+    assert f'Points available: {expected_points}'.encode() in response.data
