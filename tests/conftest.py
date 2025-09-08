@@ -1,15 +1,16 @@
-import pytest
 import sys
 import os
+import pytest
 
-# Ajouter le dossier parent au path pour importer server
+# Ajouter le répertoire parent au path Python pour importer server
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + '/..'))
-
-from server import app
 
 @pytest.fixture
 def client():
-    """Client de test Flask"""
+    """Client de test Flask basique - chaque test gère ses propres données"""
+    from server import app
+    
     app.config['TESTING'] = True
+    
     with app.test_client() as client:
         yield client
