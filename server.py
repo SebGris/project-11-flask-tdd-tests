@@ -1,5 +1,6 @@
 import json
 from flask import Flask,render_template,request,redirect,flash,url_for
+from datetime import datetime
 
 
 def loadClubs():
@@ -53,12 +54,18 @@ def purchasePlaces():
     club = [c for c in clubs if c['name'] == request.form['club']][0]
     placesRequired = int(request.form['places'])
         
-    # Validation 1: limite 12 places
+    # Validation 1: Vérifier si la compétition est passée
+    competition_date = datetime.strptime(competition['date'], "%Y-%m-%d %H:%M:%S")
+    if competition_date < datetime.now():
+        flash('Cannot book places for past competitions')
+        return render_template('welcome.html', club=club, competitions=competitions)
+    
+    # Validation 2: limite 12 places
     if placesRequired > 12:
         flash('Cannot book more than 12 places at once')
         return render_template('welcome.html', club=club, competitions=competitions)
     
-    # Validation 2: vérifier les points disponibles
+    # Validation 3: vérifier les points disponibles
     if placesRequired > int(club['points']):
         flash(f"Not enough points. You have {club['points']} points.")
         return render_template('welcome.html', club=club, competitions=competitions)
