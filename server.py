@@ -70,6 +70,11 @@ def purchasePlaces():
         flash(f"Not enough points. You have {club['points']} points.")
         return render_template('welcome.html', club=club, competitions=competitions)
     
+    # Validation 4: vérifier les places disponibles dans la compétition
+    if placesRequired > int(competition['numberOfPlaces']):
+        flash(f"Not enough places available. Only {competition['numberOfPlaces']} places left.")
+        return render_template('welcome.html', club=club, competitions=competitions)
+    
     # Déduction des points et places
     current_points = int(club['points'])
     new_points = current_points - placesRequired
