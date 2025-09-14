@@ -1,6 +1,7 @@
 import json
 from flask import Flask,render_template,request,redirect,flash,url_for
-from datetime import datetime
+from datetime import datetime, timedelta
+
 
 
 def loadClubs():
@@ -21,6 +22,16 @@ app.secret_key = 'something_special'
 competitions = loadCompetitions()
 clubs = loadClubs()
 
+# Ajouter une compétition de test dans le futur (sans toucher au JSON)
+future_datetime = datetime.now() + timedelta(days=30)
+future_date = future_datetime.strftime("%Y-%m-%d %H:%M:%S")
+competitions.append({
+    'name': 'Test Future Competition',
+    'date': future_date,
+    'numberOfPlaces': '15'
+})
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -28,6 +39,9 @@ def index():
 @app.route('/showSummary',methods=['POST'])
 def showSummary():
     club = [club for club in clubs if club['email'] == request.form['email']][0]
+    for comp in competitions:
+        comp_date = datetime.strptime(comp['date'], "%Y-%m-%d %H:%M:%S")
+        comp['is_past'] = comp_date < datetime.now()
     return render_template('welcome.html',club=club,competitions=competitions)
 
 
