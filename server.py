@@ -91,6 +91,13 @@ def purchasePlaces():
     # Traitement de la réservation
     process_booking(competition, club, places_required)
     
+    # Sauvegarde des modifications dans les fichiers JSON (sauf en mode test)
+    if not app.config.get('TESTING', False):
+        with open('clubs.json', 'w') as f:
+            json.dump({'clubs': clubs}, f, indent=4)
+        with open('competitions.json', 'w') as f:
+            json.dump({'competitions': competitions}, f, indent=4)
+    
     flash('Great-booking complete!')
     return render_template('welcome.html', club=club, competitions=competitions)
 
