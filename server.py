@@ -21,6 +21,9 @@ app.secret_key = 'something_special'
 competitions = loadCompetitions()
 clubs = loadClubs()
 
+# Dictionnaire pour tracker les réservations
+bookings = {}
+
 
 @app.route('/')
 def index():
@@ -146,6 +149,13 @@ def validate_booking(competition, club, places_required):
     if places_required > 12:
         return "Cannot book more than 12 places at once"
 
+    # Validation : Limite cumulative de 12 places par club pour la compétition
+    booking_key = (club['name'], competition['name'])
+    already_booked = bookings.get(booking_key, 0)
+    total_would_be = already_booked + places_required
+    if total_would_be > 12:
+        return "Cannot book more than 12 places in total for this competition"
+
     # 4. Vérifier les points disponibles
     if places_required > int(club['points']):
         return f"Not enough points. You have {club['points']} points available"
@@ -174,6 +184,10 @@ def process_booking(competition, club, places_required):
     # Déduction des places (garder en string pour cohérence avec JSON)
     current_places = int(competition['numberOfPlaces'])
     competition['numberOfPlaces'] = str(current_places - places_required)
+
+    # Mise à jour des réservations cumulées
+    booking_key = (club['name'], competition['name'])
+    bookings[booking_key] = bookings.get(booking_key, 0) + places_required
 
 
 @app.route('/points')
