@@ -1,27 +1,39 @@
 import pytest
 
-# Helper simple
 def login_with(client, email):
     """Helper pour réduire la duplication"""
     return client.post('/showSummary', data={'email': email})
 
-# Tests explicites
-def test_valid_email_shows_summary(client):
+def test_valid_email_shows_summary(client, mock_app_data):
     """Test qu'un email valide affiche le tableau de bord"""
-    response = login_with(client, 'john@simplylift.co')
-    response = client.get('/')  # Follow redirect manually if needed
+    response = login_with(client, 'fake@club.com')
     
-    assert b'Welcome' in response.data
+    assert response.status_code == 200
+    assert b'Welcome, fake@club.com' in response.data  # Le template affiche l'email
+    assert b'Points available: 10' in response.data    # Points du fake club
+    assert b'Fake Competition' in response.data        # Compétition mockée
 
-# Grouper les cas similaires avec parametrize
-@pytest.mark.parametrize("bad_email", [
-    '',                 # Vide
-    'not_an_email',     # Sans @
-    '@nodomain.com',    # Sans user
-    'invalid@test.com', # Non dans la liste
-])
-def test_malformed_emails_rejected(client, bad_email):
-    """Test les emails mal formés"""
-    response = login_with(client, bad_email)
+def test_invalid_email_redirects(client, mock_app_data):
+    """Test qu'un email invalide redirige"""
+    response = login_with(client, 'nonexistent@email.com')
+    
     assert response.status_code == 302
     assert response.location == '/'
+
+@pytest.mark.parametrize("email,should_succeed", [
+    ('fake@club.com', True),
+    ('other@club.com', True),
+    ('invalid@test.com', False),
+    ('', False),
+    ('not_an_email', False),
+])
+def test_email_validation_matrix(client, mock_app_data, email, should_succeed):
+    """Matrice de tests pour validation d'email"""
+    response = login_with(client, email)
+    
+    if should_succeed:
+        assert response.status_code == 200
+        assert b'Welcome' in response.data
+    else:
+        assert response.status_code == 302
+        assert response.location == '/'
