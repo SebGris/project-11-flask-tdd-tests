@@ -1,11 +1,8 @@
 import pytest
-import sys
-import os
 
-# Ajouter le dossier parent au path pour importer server
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + '/..'))
 
 from server import app
+
 
 @pytest.fixture
 def client():
@@ -13,3 +10,11 @@ def client():
     app.config['TESTING'] = True
     with app.test_client() as client:
         yield client
+
+
+@pytest.fixture
+def fake_clubs():
+    return [
+        {'name': 'Fake Club', 'email': 'fake@club.com', 'points': '10'},
+        {'name': 'Other Club', 'email': 'other@club.com', 'points': '20'}
+    ]
