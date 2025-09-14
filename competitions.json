@@ -3,12 +3,20 @@
         {
             "name": "Spring Festival",
             "date": "2020-03-27 10:00:00",
-            "numberOfPlaces": "25"
+            "numberOfPlaces": "25",
+            "is_past": true
         },
         {
             "name": "Fall Classic",
             "date": "2020-10-22 13:30:00",
-            "numberOfPlaces": "13"
+            "numberOfPlaces": "13",
+            "is_past": true
+        },
+        {
+            "name": "Test Future Competition",
+            "date": "2025-10-14 21:21:00",
+            "numberOfPlaces": "13",
+            "is_past": false
         }
     ]
 }
