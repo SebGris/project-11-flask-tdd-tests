@@ -1,8 +1,7 @@
 from freezegun import freeze_time
-from unittest.mock import patch  # ou monkeypatch si vous préférez
 
 @freeze_time("2025-01-15")
-def test_cannot_book_past_competition(client):
+def test_cannot_book_past_competition(client, monkeypatch):
     """Bug #5: On ne peut pas réserver pour une compétition passée"""
     
     test_competitions = [{
@@ -17,16 +16,18 @@ def test_cannot_book_past_competition(client):
         'points': '5'
     }]
     
-    with patch('server.competitions', test_competitions), patch('server.clubs', test_clubs):
-        response = client.post('/purchasePlaces',
-                              data={'competition': test_competitions[0]['name'],
-                                    'club': test_clubs[0]['name'],
-                                    'places': '1'})
-        
-        assert b'Cannot book places for past competitions' in response.data
+    monkeypatch.setattr('server.competitions', test_competitions)
+    monkeypatch.setattr('server.clubs', test_clubs)
+    
+    response = client.post('/purchasePlaces',
+                          data={'competition': test_competitions[0]['name'],
+                                'club': test_clubs[0]['name'],
+                                'places': '1'})
+    
+    assert b'Cannot book places for past competitions' in response.data
 
 @freeze_time("2025-01-15")
-def test_can_book_future_competition(client):
+def test_can_book_future_competition(client, monkeypatch):
     """On peut réserver pour une compétition future"""
     
     test_competitions = [{
@@ -41,12 +42,14 @@ def test_can_book_future_competition(client):
         'points': '5'
     }]
     
-    with patch('server.competitions', test_competitions), patch('server.clubs', test_clubs):
-        response = client.post('/purchasePlaces',
-                              data={'competition': test_competitions[0]['name'],
-                                    'club': test_clubs[0]['name'],
-                                    'places': '1'})
-        
-        assert b'Great-booking complete!' in response.data
-        # Vérification de la mise à jour des points
-        assert test_clubs[0]['points'] == '4'
+    monkeypatch.setattr('server.competitions', test_competitions)
+    monkeypatch.setattr('server.clubs', test_clubs)
+    
+    response = client.post('/purchasePlaces',
+                          data={'competition': test_competitions[0]['name'],
+                                'club': test_clubs[0]['name'],
+                                'places': '1'})
+    
+    assert b'Great-booking complete!' in response.data
+    # Vérification de la mise à jour des points
+    assert test_clubs[0]['points'] == '4'
