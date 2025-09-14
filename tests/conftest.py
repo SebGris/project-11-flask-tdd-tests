@@ -12,6 +12,7 @@ def client():
     with app.test_client() as client:
         yield client
 
+
 @pytest.fixture
 def fake_clubs():
     return [
@@ -19,12 +20,22 @@ def fake_clubs():
         {'name': 'Other Club', 'email': 'other@club.com', 'points': '20'}
     ]
 
+
 @pytest.fixture
 def fake_competitions():
     return [
-        {'name': 'Fake Competition', 'date': '2025-12-31 10:00:00', 'numberOfPlaces': '5'},
-        {'name': 'Other Competition', 'date': '2025-11-30 10:00:00', 'numberOfPlaces': '10'}
+        {
+            'name': 'Fake Competition',
+            'date': '2025-12-31 10:00:00',
+            'numberOfPlaces': '5'
+        },
+        {
+            'name': 'Other Competition',
+            'date': '2025-11-30 10:00:00',
+            'numberOfPlaces': '10'
+        }
     ]
+
 
 @pytest.fixture
 def mock_app_data(monkeypatch, fake_clubs, fake_competitions):
