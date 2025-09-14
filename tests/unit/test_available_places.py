@@ -1,8 +1,7 @@
 from freezegun import freeze_time
-from unittest.mock import patch
 
 @freeze_time("2025-01-15")
-def test_cannot_book_more_than_available_places(client):
+def test_cannot_book_more_than_available_places(client, monkeypatch):
     """Ne pas réserver plus de places que disponibles"""
     
     test_competitions = [{
@@ -17,11 +16,12 @@ def test_cannot_book_more_than_available_places(client):
         'points': '20'  # Assez de points
     }]
     
-    with patch('server.competitions', test_competitions):
-        with patch('server.clubs', test_clubs):
-            response = client.post('/purchasePlaces',
-                                  data={'competition': 'Small Competition',
-                                        'club': 'Test Club',
-                                        'places': '8'})  # > 5 places disponibles
-            
-            assert b'Not enough places available' in response.data
+    monkeypatch.setattr('server.competitions', test_competitions)
+    monkeypatch.setattr('server.clubs', test_clubs)
+    
+    response = client.post('/purchasePlaces',
+                          data={'competition': test_competitions[0]['name'],
+                                'club': test_clubs[0]['name'],
+                                'places': '8'})  # > 5 places disponibles
+    
+    assert b'Not enough places available' in response.data
