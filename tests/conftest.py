@@ -4,6 +4,7 @@ import server
 
 from server import app
 
+
 @pytest.fixture
 def client():
     """Client de test Flask basique - chaque test gère ses propres données"""
