@@ -37,52 +37,116 @@ def showSummary():
     
     return render_template('welcome.html',club=club,competitions=competitions)
 
-@app.route('/book/<competition>/<club>')
-def book(competition,club):
-    foundClub = [c for c in clubs if c['name'] == club][0]
-    foundCompetition = [c for c in competitions if c['name'] == competition][0]
-    if foundClub and foundCompetition:
-        return render_template('booking.html',club=foundClub,competition=foundCompetition)
-    else:
-        flash("Something went wrong-please try again")
-        return render_template('welcome.html', club=club, competitions=competitions)
+
+def validate_entities(club, competition):
+    """Valide l'existence du club et de la compétition."""
+    if not club:
+        flash("Club introuvable.")
+        return False
+    if not competition:
+        flash("Compétition introuvable.")
+        return False
+    return True
 
 
-@app.route('/purchasePlaces',methods=['POST'])
+@app.route('/book/<competition_name>/<club_name>')
+def book(competition_name, club_name):
+    # Recherche du club et de la compétition
+    club = next((c for c in clubs if c['name'] == club_name), None)
+    competition = next((c for c in competitions if c['name'] == competition_name), None)
+
+    if not validate_entities(club, competition):
+        return redirect(url_for('index'))
+
+    # Affichage de la page de réservation
+    return render_template('booking.html', club=club, competition=competition)
+
+
+@app.route('/purchasePlaces', methods=['POST'])
 def purchasePlaces():
-    competition = [c for c in competitions if c['name'] == request.form['competition']][0]
-    club = [c for c in clubs if c['name'] == request.form['club']][0]
-    placesRequired = int(request.form['places'])
-        
-    # Validation 1: Vérifier si la compétition est passée
-    competition_date = datetime.strptime(competition['date'], "%Y-%m-%d %H:%M:%S")
-    if competition_date < datetime.now():
-        flash('Cannot book places for past competitions')
+    # Récupération des données du formulaire
+    competition_name = request.form.get('competition')
+    club_name = request.form.get('club')
+    
+    # Recherche des entités
+    competition = next((c for c in competitions if c['name'] == competition_name), None)
+    club = next((c for c in clubs if c['name'] == club_name), None)
+    
+    if not validate_entities(club, competition):
+        return redirect(url_for('index'))
+    
+    # Conversion et validation du nombre de places
+    try:
+        places_required = int(request.form.get('places', 0))
+    except ValueError:
+        flash("Nombre de places invalide.")
         return render_template('welcome.html', club=club, competitions=competitions)
     
-    # Validation 4: vérifier les places disponibles dans la compétition
-    if placesRequired > int(competition['numberOfPlaces']):
-        flash(f"Not enough places available.")
-        return render_template('welcome.html', club=club, competitions=competitions)
-
-    # Validation 2: limite 12 places
-    if placesRequired > 12:
-        flash('Cannot book more than 12 places')
+    # Validations métier
+    error_message = validate_booking(competition, club, places_required)
+    if error_message:
+        flash(error_message)
         return render_template('welcome.html', club=club, competitions=competitions)
     
-    # Validation 3: vérifier les points disponibles
-    if placesRequired > int(club['points']):
-        flash(f"Not enough points.")
-        return render_template('welcome.html', club=club, competitions=competitions)
+    # Traitement de la réservation
+    process_booking(competition, club, places_required)
     
-    # Déduction des points et places
-    current_points = int(club['points'])
-    new_points = current_points - placesRequired
-    club['points'] = str(new_points)
-
-    competition['numberOfPlaces'] = int(competition['numberOfPlaces'])-placesRequired
     flash('Great-booking complete!')
     return render_template('welcome.html', club=club, competitions=competitions)
+
+
+def validate_booking(competition, club, places_required):
+    """Valide une réservation et retourne un message d'erreur si invalide.
+    
+    Args:
+        competition: Dictionnaire de la compétition
+        club: Dictionnaire du club
+        places_required: Nombre de places demandées
+        
+    Returns:
+        str: Message d'erreur ou None si valide
+    """
+    
+    # 1. Vérifier si la compétition est passée
+    competition_date = datetime.strptime(competition['date'], "%Y-%m-%d %H:%M:%S")
+    if competition_date < datetime.now():
+        return "Cannot book places for past competitions"
+    
+    # 2. Vérifier le nombre minimum de places
+    if places_required <= 0:
+        return "You must book at least 1 place"
+    
+    # 3. Vérifier la limite de 12 places
+    if places_required > 12:
+        return "Cannot book more than 12 places at once"
+    
+    # 4. Vérifier les points disponibles
+    if places_required > int(club['points']):
+        return f"Not enough points. You have {club['points']} points available"
+    
+    # 5. Vérifier les places disponibles dans la compétition
+    if places_required > int(competition['numberOfPlaces']):
+        return f"Not enough places available. Only {competition['numberOfPlaces']} places left"
+    
+    return None  # Pas d'erreur
+
+
+def process_booking(competition, club, places_required):
+    """Traite la réservation en mettant à jour les points et les places.
+    
+    Args:
+        competition: Dictionnaire de la compétition (modifié en place)
+        club: Dictionnaire du club (modifié en place)
+        places_required: Nombre de places à réserver
+    """
+    
+    # Déduction des points
+    current_points = int(club['points'])
+    club['points'] = str(current_points - places_required)
+    
+    # Déduction des places (garder en string pour cohérence avec JSON)
+    current_places = int(competition['numberOfPlaces'])
+    competition['numberOfPlaces'] = str(current_places - places_required)
 
 
 @app.route('/points')
