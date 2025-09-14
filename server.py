@@ -20,6 +20,9 @@ app.secret_key = 'something_special'
 competitions = loadCompetitions()
 clubs = loadClubs()
 
+# Dictionnaire pour tracker les réservations : {(club_name, competition_name): places_reserved}
+bookings = {}
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -47,11 +50,22 @@ def purchasePlaces():
     club = [c for c in clubs if c['name'] == request.form['club']][0]
     placesRequired = int(request.form['places'])
     
-    # AJOUT : Validation limite 12 places
+    # Validation : Limite de 12 places par réservation
     if placesRequired > 12:
-        flash('Cannot book more than 12 places at once')
+        flash('Cannot book more than 12 places')
         return render_template('welcome.html', club=club, competitions=competitions)
-    
+
+    # Validation : Limite cumulative de 12 places par club pour la compétition
+    booking_key = (club['name'], competition['name'])
+    already_booked = bookings.get(booking_key, 0)
+    total_would_be = already_booked + placesRequired
+    if total_would_be > 12:
+        flash('Cannot book more than 12 places in total for this competition')
+        return render_template('welcome.html', club=club, competitions=competitions)
+
+    # Mise à jour des réservations cumulées
+    bookings[booking_key] = total_would_be
+
     club['points'] = str(int(club['points']) - placesRequired)
     competition['numberOfPlaces'] = int(competition['numberOfPlaces'])-placesRequired
     flash('Great-booking complete!')
