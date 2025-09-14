@@ -19,8 +19,7 @@ def test_cannot_book_past_competition(client):
     }]
     
     # Patcher les données
-    with patch('server.competitions', test_competitions):
-        with patch('server.clubs', test_clubs):
+    with patch('server.competitions', test_competitions), patch('server.clubs', test_clubs):
             response = client.post('/purchasePlaces',
                                   data={'competition': 'Past Competition',
                                         'club': 'Test Club', 
@@ -44,11 +43,12 @@ def test_can_book_future_competition(client):
         'points': '5'
     }]
     
-    with patch('server.competitions', test_competitions):
-        with patch('server.clubs', test_clubs):
+    with patch('server.competitions', test_competitions), patch('server.clubs', test_clubs):
             response = client.post('/purchasePlaces',
                                   data={'competition': 'Future Competition',
                                         'club': 'Test Club', 
                                         'places': '1'})
             
             assert b'Great-booking complete!' in response.data
+            # Vérification de la mise à jour des points
+            assert test_clubs[0]['points'] == '4'
