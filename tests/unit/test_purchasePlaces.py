@@ -441,3 +441,62 @@ def test_purchase_places_with_empty_places(client, monkeypatch):
 
     # La conversion int('') déclenche ValueError
     assert b'Nombre de places invalide.' in response.data
+
+
+@freeze_time("2025-01-15")
+def test_cannot_book_zero_places(client, monkeypatch):
+    """Tester qu'on ne peut pas réserver 0 place"""
+    test_clubs = [{
+        'name': 'Test Club',
+        'email': 'test@club.com',
+        'points': '10'
+    }]
+
+    test_competitions = [{
+        'name': 'Test Competition',
+        'date': '2025-06-01 10:00:00',
+        'numberOfPlaces': '15'
+    }]
+
+    monkeypatch.setattr('server.clubs', test_clubs)
+    monkeypatch.setattr('server.competitions', test_competitions)
+
+    # Essayer de réserver 0 place
+    response = client.post('/purchasePlaces', data={
+        'competition': 'Test Competition',
+        'club': 'Test Club',
+        'places': '0'
+    })
+
+    # Vérifier le message d'erreur
+    assert b'You must book at least 1 place' in response.data
+    assert response.status_code == 200
+
+
+@freeze_time("2025-01-15")
+def test_cannot_book_negative_places(client, monkeypatch):
+    """Tester qu'on ne peut pas réserver un nombre négatif de places"""
+    test_clubs = [{
+        'name': 'Test Club',
+        'email': 'test@club.com',
+        'points': '10'
+    }]
+
+    test_competitions = [{
+        'name': 'Test Competition',
+        'date': '2025-06-01 10:00:00',
+        'numberOfPlaces': '15'
+    }]
+
+    monkeypatch.setattr('server.clubs', test_clubs)
+    monkeypatch.setattr('server.competitions', test_competitions)
+
+    # Essayer de réserver -5 places
+    response = client.post('/purchasePlaces', data={
+        'competition': 'Test Competition',
+        'club': 'Test Club',
+        'places': '-5'
+    })
+
+    # Vérifier le message d'erreur
+    assert b'You must book at least 1 place' in response.data
