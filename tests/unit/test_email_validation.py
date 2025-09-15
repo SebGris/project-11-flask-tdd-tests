@@ -1,6 +1,13 @@
 import pytest
 
 
+def test_homepage(client):
+    """Test de la page d'accueil"""
+    response = client.get('/')
+    assert response.status_code == 200
+    assert b'GUDLFT Registration' in response.data
+
+
 def login_with(client, email):
     """Helper pour réduire la duplication"""
     return client.post('/showSummary', data={'email': email})
