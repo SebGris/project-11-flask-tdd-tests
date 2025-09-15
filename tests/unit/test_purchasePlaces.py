@@ -272,3 +272,41 @@ def test_points_validation_for_booking(
         # Cas de succès : vérifier mise à jour
         assert b'Great-booking complete!' in response.data
         assert test_clubs[0]['points'] == str(points - places_to_book)
+
+
+def test_book_with_invalid_club(client, monkeypatch):
+    """Tester la route book avec un club inexistant"""
+    test_competitions = [{
+        'name': 'Test Competition',
+        'date': '2025-06-01 10:00:00',
+        'numberOfPlaces': '10'
+    }]
+
+    monkeypatch.setattr('server.competitions', test_competitions)
+    monkeypatch.setattr('server.clubs', [])  # Aucun club
+
+    # Accéder à book avec un club qui n'existe pas
+    response = client.get('/book/Test Competition/Invalid Club')
+
+    # Devrait rediriger vers index
+    assert response.status_code == 302
+    assert response.location == '/'
+
+
+def test_book_with_invalid_competition(client, monkeypatch):
+    """Tester la route book avec une compétition inexistante"""
+    test_clubs = [{
+        'name': 'Test Club',
+        'email': 'test@club.com',
+        'points': '10'
+    }]
+
+    monkeypatch.setattr('server.clubs', test_clubs)
+    monkeypatch.setattr('server.competitions', [])  # Aucune compétition
+
+    # Accéder à book avec une compétition qui n'existe pas
+    response = client.get('/book/Invalid Competition/Test Club')
+
+    # Devrait rediriger vers index
+    assert response.status_code == 302
+    assert response.location == '/'
