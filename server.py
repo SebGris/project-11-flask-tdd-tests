@@ -21,14 +21,15 @@ app.secret_key = 'something_special'
 competitions = loadCompetitions()
 clubs = loadClubs()
 
-# Ajouter une compétition de test dans le futur (sans toucher au JSON)
-future_datetime = datetime.now() + timedelta(days=30)
-future_date = future_datetime.strftime("%Y-%m-%d %H:%M:%S")
-competitions.append({
-    'name': 'Test Future Competition',
-    'date': future_date,
-    'numberOfPlaces': '15'
-})
+if app.config.get('TESTING', False):
+    # Ajouter une compétition de test dans le futur (sans toucher au JSON)
+    future_datetime = datetime.now() + timedelta(days=30)
+    future_date = future_datetime.strftime("%Y-%m-%d %H:%M:%S")
+    competitions.append({
+        'name': 'Test Future Competition',
+        'date': future_date,
+        'numberOfPlaces': '15'
+    })
 
 # Dictionnaire pour tracker les réservations
 bookings = {}
