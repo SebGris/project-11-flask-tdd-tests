@@ -383,3 +383,61 @@ def test_purchase_places_with_invalid_competition(client, monkeypatch):
     # Devrait rediriger vers index
     assert response.status_code == 302
     assert response.location == '/'
+
+
+def test_purchase_places_with_invalid_number(client, monkeypatch):
+    """Tester purchasePlaces avec un nombre de places invalide"""
+    test_clubs = [{
+        'name': 'Test Club',
+        'email': 'test@club.com',
+        'points': '10'
+    }]
+
+    test_competitions = [{
+        'name': 'Test Competition',
+        'date': '2025-06-01 10:00:00',
+        'numberOfPlaces': '15'
+    }]
+
+    monkeypatch.setattr('server.clubs', test_clubs)
+    monkeypatch.setattr('server.competitions', test_competitions)
+
+    # Envoyer une valeur non numérique pour 'places'
+    response = client.post('/purchasePlaces', data={
+        'competition': 'Test Competition',
+        'club': 'Test Club',
+        'places': 'abc'  # Chaîne non convertible en int
+    })
+
+    # Vérifier que le message d'erreur s'affiche
+    assert response.status_code == 200
+    assert b'Nombre de places invalide.' in response.data
+    assert b'Welcome' in response.data  # On reste sur welcome.html
+
+
+def test_purchase_places_with_empty_places(client, monkeypatch):
+    """Tester avec un champ places vide"""
+    test_clubs = [{
+        'name': 'Test Club',
+        'email': 'test@club.com',
+        'points': '10'
+    }]
+
+    test_competitions = [{
+        'name': 'Test Competition',
+        'date': '2025-06-01 10:00:00',
+        'numberOfPlaces': '15'
+    }]
+
+    monkeypatch.setattr('server.clubs', test_clubs)
+    monkeypatch.setattr('server.competitions', test_competitions)
+
+    # Envoyer sans le champ 'places'
+    response = client.post('/purchasePlaces', data={
+        'competition': 'Test Competition',
+        'club': 'Test Club',
+        'places': ''  # Chaîne vide
+    })
+
+    # La conversion int('') déclenche ValueError
+    assert b'Nombre de places invalide.' in response.data
