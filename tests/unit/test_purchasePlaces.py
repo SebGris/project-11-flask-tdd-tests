@@ -310,3 +310,30 @@ def test_book_with_invalid_competition(client, monkeypatch):
     # Devrait rediriger vers index
     assert response.status_code == 302
     assert response.location == '/'
+
+
+def test_book_with_valid_entities(client, monkeypatch):
+    """Tester que la page de réservation s'affiche avec des entités valides"""
+    test_clubs = [{
+        'name': 'Test Club',
+        'email': 'test@club.com',
+        'points': '10'
+    }]
+
+    test_competitions = [{
+        'name': 'Test Competition',
+        'date': '2025-06-01 10:00:00',
+        'numberOfPlaces': '15'
+    }]
+
+    monkeypatch.setattr('server.clubs', test_clubs)
+    monkeypatch.setattr('server.competitions', test_competitions)
+
+    # Accéder à book avec des entités valides
+    response = client.get('/book/Test Competition/Test Club')
+
+    # Vérifier que la page booking s'affiche
+    assert response.status_code == 200
+    assert b'Test Competition' in response.data
+    assert b'Places available: 15' in response.data
+    assert b'How many places?' in response.data
