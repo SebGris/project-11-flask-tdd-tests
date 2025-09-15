@@ -337,3 +337,49 @@ def test_book_with_valid_entities(client, monkeypatch):
     assert b'Test Competition' in response.data
     assert b'Places available: 15' in response.data
     assert b'How many places?' in response.data
+
+
+def test_purchase_places_with_invalid_club(client, monkeypatch):
+    """Tester purchasePlaces avec un club inexistant"""
+    test_competitions = [{
+        'name': 'Test Competition',
+        'date': '2025-06-01 10:00:00',
+        'numberOfPlaces': '10'
+    }]
+
+    monkeypatch.setattr('server.competitions', test_competitions)
+    monkeypatch.setattr('server.clubs', [])  # Aucun club
+
+    # Essayer d'acheter des places avec un club invalide
+    response = client.post('/purchasePlaces', data={
+        'competition': 'Test Competition',
+        'club': 'Invalid Club',
+        'places': '2'
+    })
+
+    # Devrait rediriger vers index
+    assert response.status_code == 302
+    assert response.location == '/'
+
+
+def test_purchase_places_with_invalid_competition(client, monkeypatch):
+    """Tester purchasePlaces avec une compétition inexistante"""
+    test_clubs = [{
+        'name': 'Test Club',
+        'email': 'test@club.com',
+        'points': '10'
+    }]
+
+    monkeypatch.setattr('server.clubs', test_clubs)
+    monkeypatch.setattr('server.competitions', [])  # Aucune compétition
+
+    # Essayer d'acheter des places avec une compétition invalide
+    response = client.post('/purchasePlaces', data={
+        'competition': 'Invalid Competition',
+        'club': 'Test Club',
+        'places': '2'
+    })
+
+    # Devrait rediriger vers index
+    assert response.status_code == 302
+    assert response.location == '/'
