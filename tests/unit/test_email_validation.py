@@ -48,3 +48,11 @@ def test_email_validation_matrix(client, mock_app_data, email, should_succeed):
     else:
         assert response.status_code == 302
         assert response.location == '/'
+
+
+def test_logout_redirects_to_index(client):
+    """Test que logout redirige vers la page d'accueil"""
+    response = client.get('/logout')
+
+    assert response.status_code == 302
+    assert response.location == '/'
