@@ -1,6 +1,6 @@
 import json
 from flask import Flask, render_template, request, redirect, flash, url_for
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 def loadClubs():
@@ -21,15 +21,6 @@ app.secret_key = 'something_special'
 competitions = loadCompetitions()
 clubs = loadClubs()
 
-if app.config.get('TESTING', False):
-    # Ajouter une compétition de test dans le futur (sans toucher au JSON)
-    future_datetime = datetime.now() + timedelta(days=30)
-    future_date = future_datetime.strftime("%Y-%m-%d %H:%M:%S")
-    competitions.append({
-        'name': 'Test Future Competition',
-        'date': future_date,
-        'numberOfPlaces': '15'
-    })
 
 # Dictionnaire pour tracker les réservations
 bookings = {}
@@ -159,17 +150,6 @@ def validate_booking(competition, club, places_required):
     if places_required <= 0:
         return "You must book at least 1 place"
 
-    # 3. Vérifier la limite de 12 places
-    if places_required > 12:
-        return "Cannot book more than 12 places at once"
-
-    # Validation : Limite cumulative de 12 places par club pour la compétition
-    booking_key = (club['name'], competition['name'])
-    already_booked = bookings.get(booking_key, 0)
-    total_would_be = already_booked + places_required
-    if total_would_be > 12:
-        return "Cannot book more than 12 places in total for this competition"
-
     # 4. Vérifier les points disponibles
     if places_required > int(club['points']):
         return f"Not enough points. You have {club['points']} points available"
@@ -178,6 +158,13 @@ def validate_booking(competition, club, places_required):
     if places_required > int(competition['numberOfPlaces']):
         places_left = competition['numberOfPlaces']
         return f"Not enough places available. Only {places_left} places left"
+
+    # Validation : Limite cumulative de 12 places par club pour la compétition
+    booking_key = (club['name'], competition['name'])
+    already_booked = bookings.get(booking_key, 0)
+    total_would_be = already_booked + places_required
+    if total_would_be > 12:
+        return "Cannot book more than 12 places in total for this competition"
 
     return None  # Pas d'erreur
 
