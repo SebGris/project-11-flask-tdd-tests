@@ -23,14 +23,6 @@ def test_valid_email_shows_summary(client, mock_app_data):
     assert b'Fake Competition' in response.data        # Compétition mockée
 
 
-def test_invalid_email_redirects(client, mock_app_data):
-    """Test qu'un email invalide redirige"""
-    response = login_with(client, 'nonexistent@email.com')
-
-    assert response.status_code == 302
-    assert response.location == '/'
-
-
 @pytest.mark.parametrize("email,should_succeed", [
     ('fake@club.com', True),
     ('other@club.com', True),
