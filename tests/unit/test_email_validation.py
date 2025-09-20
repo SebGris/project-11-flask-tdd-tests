@@ -8,14 +8,9 @@ def test_homepage(client):
     assert b'GUDLFT Registration' in response.data
 
 
-def login_with(client, email):
-    """Helper pour réduire la duplication"""
-    return client.post('/showSummary', data={'email': email})
-
-
-def test_valid_email_shows_summary(client, mock_app_data):
+def test_valid_email_shows_summary(client):
     """Test qu'un email valide affiche le tableau de bord"""
-    response = login_with(client, 'fake@club.com')
+    response = client.post('/showSummary', data={'email': 'fake@club.com'})
 
     assert response.status_code == 200
     assert b'Welcome, fake@club.com' in response.data
@@ -24,15 +19,14 @@ def test_valid_email_shows_summary(client, mock_app_data):
 
 
 @pytest.mark.parametrize("email,should_succeed", [
-    ('fake@club.com', True),
     ('other@club.com', True),
     ('invalid@test.com', False),
     ('', False),
     ('not_an_email', False),
 ])
-def test_email_validation_matrix(client, mock_app_data, email, should_succeed):
+def test_email_validation_matrix(client, email, should_succeed):
     """Matrice de tests pour validation d'email"""
-    response = login_with(client, email)
+    response = client.post('/showSummary', data={'email': email})
 
     if should_succeed:
         assert response.status_code == 200
