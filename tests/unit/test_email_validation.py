@@ -37,3 +37,13 @@ def test_email_validation_matrix(client, mock_app_data, email, should_succeed):
     else:
         assert response.status_code == 302
         assert response.location == '/'
+
+def test_invalid_email_shows_flash_message(client):
+    """Test qu'un email invalide affiche un message flash"""
+    # Suivre la redirection pour voir le message flash
+    response = client.post('/showSummary', 
+                          data={'email': 'invalid@test.com'},
+                          follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert b"Sorry, that email wasn&#39;t found." in response.data
