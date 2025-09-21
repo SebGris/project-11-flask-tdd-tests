@@ -15,7 +15,7 @@ def test_valid_email_shows_summary(client):
     assert response.status_code == 200
     assert b'Welcome, fake@club.com' in response.data
     assert b'Points available: 10' in response.data    # Points du fake club
-    assert b'Fake Competition' in response.data        # Compétition mockée
+    assert b'Test Competition' in response.data        # Compétition mockée
 
 
 @pytest.mark.parametrize("email,should_succeed", [

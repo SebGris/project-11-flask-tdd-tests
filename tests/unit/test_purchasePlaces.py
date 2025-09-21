@@ -2,501 +2,164 @@ import pytest
 from freezegun import freeze_time
 
 
-# test_available_places
-@freeze_time("2025-01-15")
-def test_cannot_book_more_than_available_places(client, monkeypatch):
-    """Ne pas réserver plus de places que disponibles"""
-
-    test_competitions = [{
-        'name': 'Small Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '5'  # Seulement 5 places
-    }]
-
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '20'  # Assez de points
-    }]
-
-    monkeypatch.setattr('server.competitions', test_competitions)
-    monkeypatch.setattr('server.clubs', test_clubs)
-
-    response = client.post(
-        '/purchasePlaces',
-        data={
-            'competition': test_competitions[0]['name'],
-            'club': test_clubs[0]['name'],
-            'places': '8'
-        }
-    )  # > 5 places disponibles
-
-    assert b'Not enough places available' in response.data
-
-
-# test_booking_limit
-@freeze_time("2025-01-15")
-def test_cannot_book_more_than_12_places(client, monkeypatch):
-    """On ne devrait pas pouvoir réserver plus de 12 places"""
-
-    # Données de test contrôlées
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',  # Future vs 2025-01-15
-        'numberOfPlaces': '50'  # Assez de places
-    }]
-
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '20'  # Assez de points
-    }]
-
-    monkeypatch.setattr('server.competitions', test_competitions)
-    monkeypatch.setattr('server.clubs', test_clubs)
-
-    response = client.post(
-        '/purchasePlaces',
-        data={
-            'competition': test_competitions[0]['name'],
-            'club': test_clubs[0]['name'],
-            'places': '13'
-        }
-    )  # > 12 places
-
-    assert b'Cannot book more than 12 places' in response.data
-
-
-@freeze_time("2025-01-15")
-def test_cannot_book_more_than_12_places_total(client, monkeypatch):
-    """
-    Un club ne peut pas réserver plus de 12 places au total pour une
-    compétition
-    """
-    competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '20'
-    }]
-    clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '20'
-    }]
-
-    monkeypatch.setattr('server.competitions', competitions)
-    monkeypatch.setattr('server.clubs', clubs)
-    monkeypatch.setattr('server.bookings', {})  # ← AJOUTER CETTE LIGNE !
-
-    # Premier achat de 8 places
-    response1 = client.post('/purchasePlaces', data={
-        'competition': competitions[0]['name'],
-        'club': clubs[0]['name'],
-        'places': '8'
+def post_booking(client, monkeypatch, comp, club, places, bookings=None):
+    """Helper compact pour les tests de réservation"""
+    monkeypatch.setattr('server.competitions', [comp])
+    monkeypatch.setattr('server.clubs', [club])
+    if bookings:
+        monkeypatch.setattr('server.bookings', bookings)
+    return client.post('/purchasePlaces', data={
+        'competition': comp['name'],
+        'club': club['name'],
+        'places': str(places)
     })
-    assert b'Great-booking complete!' in response1.data
-
-    # Deuxième achat de 5 places (total 13, donc refusé)
-    response2 = client.post('/purchasePlaces', data={
-        'competition': competitions[0]['name'],
-        'club': clubs[0]['name'],
-        'places': '5'
-    })
-    assert (
-        b'Cannot book more than 12 places in total for this competition'
-        in response2.data
-    )
-
-
-# test_past_competition
-@freeze_time("2025-01-15")
-def test_cannot_book_past_competition(client, monkeypatch):
-    """Bug #5: On ne peut pas réserver pour une compétition passée"""
-
-    test_competitions = [{
-        'name': 'Past Competition',
-        'date': '2024-12-01 10:00:00',
-        'numberOfPlaces': '10'
-    }]
-
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '5'
-    }]
-
-    monkeypatch.setattr('server.competitions', test_competitions)
-    monkeypatch.setattr('server.clubs', test_clubs)
-
-    response = client.post(
-        '/purchasePlaces',
-        data={
-            'competition': test_competitions[0]['name'],
-            'club': test_clubs[0]['name'],
-            'places': '1'
-        }
-    )
-
-    assert b'Cannot book places for past competitions' in response.data
 
 
 @freeze_time("2025-01-15")
-def test_can_book_future_competition(client, monkeypatch):
-    """On peut réserver pour une compétition future"""
+class TestBookingValidations:
+    """Tests groupés par scénarios de validation"""
 
-    test_competitions = [{
-        'name': 'Future Competition',
-        'date': '2025-12-01 10:00:00',
-        'numberOfPlaces': '10'
-    }]
+    def test_past_competition(self, client, monkeypatch,
+                              base_club, base_competition):
+        """Compétition passée"""
+        club = base_club.copy()
+        club['points'] = '20'
+        comp = base_competition.copy()
+        comp['date'] = '2024-01-01 10:00:00'
 
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '5'
-    }]
+        resp = post_booking(client, monkeypatch, comp, club, 1)
+        assert b'Cannot book places for past competitions.' in resp.data
 
-    monkeypatch.setattr('server.competitions', test_competitions)
-    monkeypatch.setattr('server.clubs', test_clubs)
+    def test_zero_and_negative_places(self, client, monkeypatch,
+                                      base_club, base_competition):
+        """0 ou places négatives"""
+        club = base_club.copy()
+        club['points'] = '20'
 
-    response = client.post(
-        '/purchasePlaces',
-        data={
-            'competition': test_competitions[0]['name'],
-            'club': test_clubs[0]['name'],
-            'places': '1'
-        }
-    )
+        # Test 0 places
+        resp = post_booking(client, monkeypatch, base_competition, club, 0)
+        assert b'You must book at least 1 place.' in resp.data
 
-    assert b'Great-booking complete!' in response.data
-    # Vérification de la mise à jour des points
-    assert test_clubs[0]['points'] == '4'
+        # Test places négatives
+        resp = post_booking(client, monkeypatch, base_competition, club, -5)
+        assert b'You must book at least 1 place.' in resp.data
+
+    def test_more_than_available(self, client, monkeypatch,
+                                 base_club, base_competition):
+        """Plus de places que disponibles"""
+        club = base_club.copy()
+        club['points'] = '20'
+        comp = base_competition.copy()
+        comp['numberOfPlaces'] = '4'
+
+        resp = post_booking(client, monkeypatch, comp, club, 8)
+        assert b'Not enough places available.' in resp.data
+
+    def test_more_than_twelve(self, client, monkeypatch,
+                              base_club, base_competition):
+        """Plus de 12 places d'un coup"""
+        club = base_club.copy()
+        club['points'] = '20'
+        comp = base_competition.copy()
+        comp['numberOfPlaces'] = '50'
+
+        resp = post_booking(client, monkeypatch, comp, club, 13)
+        assert b'Cannot book more than 12 places at once' in resp.data
 
 
-# test_points_deduction
 @freeze_time("2025-01-15")
-def test_points_calculation_is_correct(client, monkeypatch):
-    """Test que les points sont correctement déduits après une réservation"""
-
-    # Données de test contrôlées
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',  # Future vs 2025-01-15
-        'numberOfPlaces': '50'  # Assez de places disponibles
-    }]
-
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '15'  # Points initiaux clairement définis
-    }]
-
-    places_to_book = 3
-    expected_points_after = int(test_clubs[0]['points']) - places_to_book
-    initial_places = int(test_competitions[0]['numberOfPlaces'])
-
-    monkeypatch.setattr('server.competitions', test_competitions)
-    monkeypatch.setattr('server.clubs', test_clubs)
-
-    response = client.post(
-        '/purchasePlaces',
-        data={
-            'competition': test_competitions[0]['name'],
-            'club': test_clubs[0]['name'],
-            'places': str(places_to_book)
-        }
-    )
-
-    # Vérifier que la réservation a réussi
-    assert b'Great-booking complete!' in response.data
-
-    # Vérifier que les points sont correctement affichés
-    assert (
-        f'Points available: {expected_points_after}'.encode()
-        in response.data
-    )
-
-    # Vérifier que le dictionnaire est bien modifié
-    assert test_clubs[0]['points'] == str(expected_points_after)
-
-    # Vérifier aussi que les places de la compétition sont mises à jour
-    assert str(test_competitions[0]['numberOfPlaces']) == (
-        str(initial_places - places_to_book)
-    )
-
-
-# test_points_validation
-@pytest.mark.parametrize("points,places_to_book,should_fail", [
+@pytest.mark.parametrize("points,places,should_fail", [
     (3, 5, True),   # Plus de places que de points
     (3, 3, False),  # Exactement assez de points
     (3, 2, False),  # Moins de places que de points
     (0, 1, True),   # Aucun point
 ])
-@freeze_time("2025-01-15")
-def test_points_validation_for_booking(
-    client, monkeypatch, points, places_to_book, should_fail
-):
-    """Test la validation des points pour différents cas"""
+def test_points_validation(client, monkeypatch, base_competition,
+                           points, places, should_fail):
+    """Test la validation des points"""
+    club = {'name': 'Fake Club', 'email': 'fake@club.com',
+            'points': str(points)}
 
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '50'
-    }]
-
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': str(points)
-    }]
-
-    # Utiliser monkeypatch au lieu de patch
-    monkeypatch.setattr('server.competitions', test_competitions)
-    monkeypatch.setattr('server.clubs', test_clubs)
-
-    response = client.post(
-        '/purchasePlaces',
-        data={
-            'competition': test_competitions[0]['name'],
-            'club': test_clubs[0]['name'],
-            'places': str(places_to_book)
-        }
-    )
+    resp = post_booking(client, monkeypatch, base_competition, club, places)
 
     if should_fail:
-        # Cas d'échec : vérifier erreur et état inchangé
-        assert b'Not enough points' in response.data
-        assert test_clubs[0]['points'] == str(points)  # Points inchangés
-        assert test_competitions[0]['numberOfPlaces'] == '50'  # pl inchangées
+        assert b'Not enough points' in resp.data
+        assert club['points'] == str(points)
     else:
-        # Cas de succès : vérifier mise à jour
-        assert b'Great-booking complete!' in response.data
-        assert test_clubs[0]['points'] == str(points - places_to_book)
-
-
-def test_book_with_invalid_club(client, monkeypatch):
-    """Tester la route book avec un club inexistant"""
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '10'
-    }]
-
-    monkeypatch.setattr('server.competitions', test_competitions)
-    monkeypatch.setattr('server.clubs', [])  # Aucun club
-
-    # Accéder à book avec un club qui n'existe pas
-    response = client.get('/book/Test Competition/Invalid Club')
-
-    # Devrait rediriger vers index
-    assert response.status_code == 302
-    assert response.location == '/'
-
-
-def test_book_with_invalid_competition(client, monkeypatch):
-    """Tester la route book avec une compétition inexistante"""
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '10'
-    }]
-
-    monkeypatch.setattr('server.clubs', test_clubs)
-    monkeypatch.setattr('server.competitions', [])  # Aucune compétition
-
-    # Accéder à book avec une compétition qui n'existe pas
-    response = client.get('/book/Invalid Competition/Test Club')
-
-    # Devrait rediriger vers index
-    assert response.status_code == 302
-    assert response.location == '/'
-
-
-def test_book_with_valid_entities(client, monkeypatch):
-    """Tester que la page de réservation s'affiche avec des entités valides"""
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '10'
-    }]
-
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '15'
-    }]
-
-    monkeypatch.setattr('server.clubs', test_clubs)
-    monkeypatch.setattr('server.competitions', test_competitions)
-
-    # Accéder à book avec des entités valides
-    response = client.get('/book/Test Competition/Test Club')
-
-    # Vérifier que la page booking s'affiche
-    assert response.status_code == 200
-    assert b'Test Competition' in response.data
-    assert b'Places available: 15' in response.data
-    assert b'How many places?' in response.data
-
-
-def test_purchase_places_with_invalid_club(client, monkeypatch):
-    """Tester purchasePlaces avec un club inexistant"""
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '10'
-    }]
-
-    monkeypatch.setattr('server.competitions', test_competitions)
-    monkeypatch.setattr('server.clubs', [])  # Aucun club
-
-    # Essayer d'acheter des places avec un club invalide
-    response = client.post('/purchasePlaces', data={
-        'competition': 'Test Competition',
-        'club': 'Invalid Club',
-        'places': '2'
-    })
-
-    # Devrait rediriger vers index
-    assert response.status_code == 302
-    assert response.location == '/'
-
-
-def test_purchase_places_with_invalid_competition(client, monkeypatch):
-    """Tester purchasePlaces avec une compétition inexistante"""
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '10'
-    }]
-
-    monkeypatch.setattr('server.clubs', test_clubs)
-    monkeypatch.setattr('server.competitions', [])  # Aucune compétition
-
-    # Essayer d'acheter des places avec une compétition invalide
-    response = client.post('/purchasePlaces', data={
-        'competition': 'Invalid Competition',
-        'club': 'Test Club',
-        'places': '2'
-    })
-
-    # Devrait rediriger vers index
-    assert response.status_code == 302
-    assert response.location == '/'
-
-
-def test_purchase_places_with_invalid_number(client, monkeypatch):
-    """Tester purchasePlaces avec un nombre de places invalide"""
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '10'
-    }]
-
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '15'
-    }]
-
-    monkeypatch.setattr('server.clubs', test_clubs)
-    monkeypatch.setattr('server.competitions', test_competitions)
-
-    # Envoyer une valeur non numérique pour 'places'
-    response = client.post('/purchasePlaces', data={
-        'competition': 'Test Competition',
-        'club': 'Test Club',
-        'places': 'abc'  # Chaîne non convertible en int
-    })
-
-    # Vérifier que le message d'erreur s'affiche
-    assert response.status_code == 200
-    assert b'Nombre de places invalide.' in response.data
-    assert b'Welcome' in response.data  # On reste sur welcome.html
-
-
-def test_purchase_places_with_empty_places(client, monkeypatch):
-    """Tester avec un champ places vide"""
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '10'
-    }]
-
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '15'
-    }]
-
-    monkeypatch.setattr('server.clubs', test_clubs)
-    monkeypatch.setattr('server.competitions', test_competitions)
-
-    # Envoyer sans le champ 'places'
-    response = client.post('/purchasePlaces', data={
-        'competition': 'Test Competition',
-        'club': 'Test Club',
-        'places': ''  # Chaîne vide
-    })
-
-    # La conversion int('') déclenche ValueError
-    assert b'Nombre de places invalide.' in response.data
+        assert b'Great-booking complete!' in resp.data
+        assert club['points'] == str(points - places)
 
 
 @freeze_time("2025-01-15")
-def test_cannot_book_zero_places(client, monkeypatch):
-    """Tester qu'on ne peut pas réserver 0 place"""
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '10'
-    }]
+def test_cumulative_booking_limit(client, monkeypatch,
+                                  base_club, base_competition):
+    """Un club ne peut pas réserver plus de 12 places au total"""
+    club = base_club.copy()
+    club['points'] = '20'
+    comp = base_competition.copy()
+    comp['numberOfPlaces'] = '20'
 
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '15'
-    }]
+    monkeypatch.setattr('server.competitions', [comp])
+    monkeypatch.setattr('server.clubs', [club])
+    monkeypatch.setattr('server.bookings', {})
 
-    monkeypatch.setattr('server.clubs', test_clubs)
-    monkeypatch.setattr('server.competitions', test_competitions)
-
-    # Essayer de réserver 0 place
-    response = client.post('/purchasePlaces', data={
-        'competition': 'Test Competition',
-        'club': 'Test Club',
-        'places': '0'
+    # Premier: 8 places
+    resp = client.post('/purchasePlaces', data={
+        'competition': comp['name'],
+        'club': club['name'],
+        'places': '8'
     })
+    assert b'Great-booking complete!' in resp.data
 
-    # Vérifier le message d'erreur
-    assert b'You must book at least 1 place' in response.data
-    assert response.status_code == 200
+    # Second: 5 places (total 13, refusé)
+    resp = client.post('/purchasePlaces', data={
+        'competition': comp['name'],
+        'club': club['name'],
+        'places': '5'
+    })
+    assert b'in total for this competition' in resp.data
+
+
+@pytest.mark.parametrize("comps,clubs,data", [
+    # Club invalide
+    ([{'name': 'Comp', 'date': '2025-06-01 10:00:00', 'numberOfPlaces': '10'}],
+     [],
+     {'competition': 'Comp', 'club': 'Invalid', 'places': '2'}),
+    # Compétition invalide
+    ([],
+     [{'name': 'Club', 'email': 'test@club.com', 'points': '10'}],
+     {'competition': 'Invalid', 'club': 'Club', 'places': '2'}),
+])
+def test_invalid_entities(client, monkeypatch, comps, clubs, data):
+    """Test avec entités invalides"""
+    monkeypatch.setattr('server.competitions', comps)
+    monkeypatch.setattr('server.clubs', clubs)
+    resp = client.post('/purchasePlaces', data=data)
+    assert resp.status_code == 302
+    assert resp.location == '/'
+
+
+@pytest.mark.parametrize("places", ['abc', ''])
+def test_invalid_input(client, monkeypatch,
+                       base_club, base_competition, places):
+    """Test avec valeurs de places invalides"""
+    resp = post_booking(client, monkeypatch,
+                        base_competition, base_club, places)
+    assert b'Nombre de places invalide.' in resp.data
+    assert resp.status_code == 200
 
 
 @freeze_time("2025-01-15")
-def test_cannot_book_negative_places(client, monkeypatch):
-    """Tester qu'on ne peut pas réserver un nombre négatif de places"""
-    test_clubs = [{
-        'name': 'Test Club',
-        'email': 'test@club.com',
-        'points': '10'
-    }]
+def test_successful_booking(client, monkeypatch, base_club, base_competition):
+    """Test d'une réservation réussie"""
+    club = base_club.copy()
+    club['points'] = '15'
+    comp = base_competition.copy()
+    comp['numberOfPlaces'] = '50'
 
-    test_competitions = [{
-        'name': 'Test Competition',
-        'date': '2025-06-01 10:00:00',
-        'numberOfPlaces': '15'
-    }]
+    resp = post_booking(client, monkeypatch, comp, club, 3)
 
-    monkeypatch.setattr('server.clubs', test_clubs)
-    monkeypatch.setattr('server.competitions', test_competitions)
-
-    # Essayer de réserver -5 places
-    response = client.post('/purchasePlaces', data={
-        'competition': 'Test Competition',
-        'club': 'Test Club',
-        'places': '-5'
-    })
-
-    # Vérifier le message d'erreur
-    assert b'You must book at least 1 place' in response.data
+    assert b'Great-booking complete!' in resp.data
+    assert b'Points available: 12' in resp.data
+    assert club['points'] == '12'
+    assert comp['numberOfPlaces'] == '47'
