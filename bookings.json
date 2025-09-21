@@ -1,0 +1,10 @@
+{
+    "bookings": [
+        {
+            "club": "Fake Club",
+            "competition": "Spring Festival",
+            "places": 8,
+            "timestamp": "2025-01-15T10:30:00"
+        }
+    ]
+}
