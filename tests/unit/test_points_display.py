@@ -4,10 +4,10 @@ def test_points_route_exists(client):
     assert response.status_code == 200
 
 
-def test_points_display_shows_all_clubs(client, monkeypatch, fake_clubs):
+def test_points_display_shows_all_clubs(client, monkeypatch, mock_clubs):
     """La page /points doit afficher tous les clubs et leurs points"""
     # Utiliser la fixture fake_clubs
-    monkeypatch.setattr('server.clubs', fake_clubs)
+    monkeypatch.setattr('server.clubs', mock_clubs)
 
     response = client.get('/points')
 
