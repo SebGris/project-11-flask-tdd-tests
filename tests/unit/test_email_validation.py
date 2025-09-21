@@ -5,7 +5,7 @@ def test_homepage(client):
     """Test de la page d'accueil"""
     response = client.get('/')
     assert response.status_code == 200
-    assert b'GUDLFT Registration' in response.data
+    assert b'Welcome to the GUDLFT Registration' in response.data
 
 
 def test_valid_email_shows_summary(client):
@@ -30,7 +30,7 @@ def test_email_validation_matrix(client, email, should_succeed):
 
     if should_succeed:
         assert response.status_code == 200
-        assert b'Welcome' in response.data
+        assert b'Welcome,' in response.data
     else:
         assert response.status_code == 302
         assert response.location == '/'
