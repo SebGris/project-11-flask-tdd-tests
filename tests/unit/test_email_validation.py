@@ -5,7 +5,7 @@ def test_homepage(client):
     """Test de la page d'accueil"""
     response = client.get('/')
     assert response.status_code == 200
-    assert b'GUDLFT Registration' in response.data
+    assert b'Welcome to the GUDLFT Registration' in response.data
 
 
 def test_valid_email_shows_summary(client):
@@ -30,7 +30,7 @@ def test_email_validation_matrix(client, email, should_succeed):
 
     if should_succeed:
         assert response.status_code == 200
-        assert b'Welcome' in response.data
+        assert b'Welcome,' in response.data
     else:
         assert response.status_code == 302
         assert response.location == '/'
@@ -42,3 +42,14 @@ def test_logout_redirects_to_index(client):
 
     assert response.status_code == 302
     assert response.location == '/'
+
+
+def test_invalid_email_shows_flash_message(client):
+    """Test qu'un email invalide affiche un message flash"""
+    # Suivre la redirection pour voir le message flash
+    response = client.post('/showSummary',
+                           data={'email': 'invalid@test.com'},
+                           follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Sorry, that email wasn&#39;t found." in response.data
