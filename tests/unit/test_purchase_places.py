@@ -69,6 +69,32 @@ class TestBookingValidations:
         )
         assert b'Cannot book more than 12 places at once' in resp.data
 
+    def test_cumulative_booking_limit(self, client, monkeypatch,
+                                      base_club, base_competition):
+        """Un club ne peut pas réserver plus de 12 places au total"""
+        base_club['points'] = '20'
+        base_competition['numberOfPlaces'] = '20'
+
+        monkeypatch.setattr('server.competitions', [base_competition])
+        monkeypatch.setattr('server.clubs', [base_club])
+        monkeypatch.setattr('server.bookings', {})
+
+        # Premier: 8 places
+        resp = client.post('/purchasePlaces', data={
+            'competition': base_competition['name'],
+            'club': base_club['name'],
+            'places': '8'
+        })
+        assert b'Great-booking complete!' in resp.data
+
+        # Second: 5 places (total 13, refusé)
+        resp = client.post('/purchasePlaces', data={
+            'competition': base_competition['name'],
+            'club': base_club['name'],
+            'places': '5'
+        })
+        assert b'in total for this competition' in resp.data
+
 
 @freeze_time("2025-01-15")
 @pytest.mark.parametrize("points,places,should_fail", [
@@ -91,34 +117,6 @@ def test_points_validation(client, monkeypatch, base_competition,
     else:
         assert b'Great-booking complete!' in resp.data
         assert club['points'] == str(points - places)
-
-
-@freeze_time("2025-01-15")
-def test_cumulative_booking_limit(client, monkeypatch,
-                                  base_club, base_competition):
-    """Un club ne peut pas réserver plus de 12 places au total"""
-    base_club['points'] = '20'
-    base_competition['numberOfPlaces'] = '20'
-
-    monkeypatch.setattr('server.competitions', [base_competition])
-    monkeypatch.setattr('server.clubs', [base_club])
-    monkeypatch.setattr('server.bookings', {})
-
-    # Premier: 8 places
-    resp = client.post('/purchasePlaces', data={
-        'competition': base_competition['name'],
-        'club': base_club['name'],
-        'places': '8'
-    })
-    assert b'Great-booking complete!' in resp.data
-
-    # Second: 5 places (total 13, refusé)
-    resp = client.post('/purchasePlaces', data={
-        'competition': base_competition['name'],
-        'club': base_club['name'],
-        'places': '5'
-    })
-    assert b'in total for this competition' in resp.data
 
 
 @pytest.mark.parametrize("comps,clubs,data", [
