@@ -168,7 +168,7 @@ def purchasePlaces():
     save_competitions(competitions)
     save_bookings(bookings)
 
-    flash('Great-booking complete!')
+    flash(f'Great-booking complete! {places_required} places booked.')
     prepare_competitions_for_display()
     return render_template('welcome.html',
                            club=club,
