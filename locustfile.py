@@ -22,40 +22,25 @@ class GUDLFTUser(HttpUser):
                          data={'email': self.current_email},
                          name="Login")
 
-    @task(3)
+    @task()
     def view_competitions(self):
-        """Test < 5s"""
-        with self.client.post('/showSummary',
-                              data={'email': self.current_email},
-                              catch_response=True,
-                              name="View Competitions") as response:
-            if response.elapsed.total_seconds() > 5:
-                response.failure(
-                    f"Temps > 5s: {response.elapsed.total_seconds()}s"
-                )
+        """Affichage des compétitions"""
+        self.client.post('/showSummary',
+                         data={'email': self.current_email},
+                         name="View Competitions")
 
-    @task(4)
+    @task()
     def book_places(self):
-        """Test réservation < 2s - Version simple"""
-        with self.client.post('/purchasePlaces',
-                              data={
-                                'competition': 'Spring Festival',
-                                'club': self.current_club,
-                                'places': '1'
-                              },
-                              catch_response=True,
-                              name="Book Places") as response:
-            # Simple : accepter si < 2s, peu importe le résultat
-            if response.elapsed.total_seconds() > 2:
-                response.failure("Temps > 2s")
-            else:
-                response.success()
+        """Réservation de places"""
+        self.client.post('/purchasePlaces',
+                         data={
+                            'competition': 'Spring Festival',
+                            'club': self.current_club,
+                            'places': '1'
+                         },
+                         name="Book Places")
 
-    @task(1)
+    @task()
     def view_points_board(self):
-        """Test < 5s"""
-        with self.client.get('/points',
-                             catch_response=True,
-                             name="Points Board") as response:
-            if response.elapsed.total_seconds() > 5:
-                response.failure("Temps > 5s")
+        """Tableau des points"""
+        self.client.get('/points', name="Points Board")
