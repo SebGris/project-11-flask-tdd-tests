@@ -22,48 +22,51 @@ class TestBookingValidations:
     def test_past_competition(self, client, monkeypatch,
                               base_club, base_competition):
         """Compétition passée"""
-        club = base_club.copy()
-        club['points'] = '20'
-        comp = base_competition.copy()
-        comp['date'] = '2024-01-01 10:00:00'
+        base_club['points'] = '20'
+        base_competition['date'] = '2024-01-01 10:00:00'
 
-        resp = post_booking(client, monkeypatch, comp, club, 1)
+        resp = post_booking(
+            client, monkeypatch, base_competition, base_club, 1
+        )
         assert b'Cannot book places for past competitions.' in resp.data
 
     def test_zero_and_negative_places(self, client, monkeypatch,
                                       base_club, base_competition):
         """0 ou places négatives"""
-        club = base_club.copy()
-        club['points'] = '20'
+        base_club['points'] = '20'
 
         # Test 0 places
-        resp = post_booking(client, monkeypatch, base_competition, club, 0)
+        resp = post_booking(
+            client, monkeypatch, base_competition, base_club, 0
+        )
         assert b'You must book at least 1 place.' in resp.data
 
         # Test places négatives
-        resp = post_booking(client, monkeypatch, base_competition, club, -5)
+        resp = post_booking(
+            client, monkeypatch, base_competition, base_club, -5
+        )
         assert b'You must book at least 1 place.' in resp.data
 
     def test_more_than_available(self, client, monkeypatch,
                                  base_club, base_competition):
         """Plus de places que disponibles"""
-        club = base_club.copy()
-        club['points'] = '20'
-        comp = base_competition.copy()
-        comp['numberOfPlaces'] = '4'
+        base_club['points'] = '20'
+        base_competition['numberOfPlaces'] = '4'
 
-        resp = post_booking(client, monkeypatch, comp, club, 8)
+        resp = post_booking(
+            client, monkeypatch, base_competition, base_club, 8
+        )
         assert b'Not enough places available.' in resp.data
 
     def test_more_than_twelve(self, client, monkeypatch,
                               base_club, base_competition):
         """Plus de 12 places d'un coup"""
-        club = base_club.copy()
-        club['points'] = '20'
-        comp = base_competition.copy()
-        comp['numberOfPlaces'] = '50'
+        base_club['points'] = '20'
+        base_competition['numberOfPlaces'] = '50'
 
-        resp = post_booking(client, monkeypatch, comp, club, 13)
+        resp = post_booking(
+            client, monkeypatch, base_competition, base_club, 13
+        )
         assert b'Cannot book more than 12 places at once' in resp.data
 
 
@@ -94,27 +97,25 @@ def test_points_validation(client, monkeypatch, base_competition,
 def test_cumulative_booking_limit(client, monkeypatch,
                                   base_club, base_competition):
     """Un club ne peut pas réserver plus de 12 places au total"""
-    club = base_club.copy()
-    club['points'] = '20'
-    comp = base_competition.copy()
-    comp['numberOfPlaces'] = '20'
+    base_club['points'] = '20'
+    base_competition['numberOfPlaces'] = '20'
 
-    monkeypatch.setattr('server.competitions', [comp])
-    monkeypatch.setattr('server.clubs', [club])
+    monkeypatch.setattr('server.competitions', [base_competition])
+    monkeypatch.setattr('server.clubs', [base_club])
     monkeypatch.setattr('server.bookings', {})
 
     # Premier: 8 places
     resp = client.post('/purchasePlaces', data={
-        'competition': comp['name'],
-        'club': club['name'],
+        'competition': base_competition['name'],
+        'club': base_club['name'],
         'places': '8'
     })
     assert b'Great-booking complete!' in resp.data
 
     # Second: 5 places (total 13, refusé)
     resp = client.post('/purchasePlaces', data={
-        'competition': comp['name'],
-        'club': club['name'],
+        'competition': base_competition['name'],
+        'club': base_club['name'],
         'places': '5'
     })
     assert b'in total for this competition' in resp.data
@@ -152,14 +153,12 @@ def test_invalid_input(client, monkeypatch,
 @freeze_time("2025-01-15")
 def test_successful_booking(client, monkeypatch, base_club, base_competition):
     """Test d'une réservation réussie"""
-    club = base_club.copy()
-    club['points'] = '15'
-    comp = base_competition.copy()
-    comp['numberOfPlaces'] = '50'
+    base_club['points'] = '15'
+    base_competition['numberOfPlaces'] = '50'
 
-    resp = post_booking(client, monkeypatch, comp, club, 3)
+    resp = post_booking(client, monkeypatch, base_competition, base_club, 3)
 
     assert b'Great-booking complete!' in resp.data
     assert b'Points available: 12' in resp.data
-    assert club['points'] == '12'
-    assert comp['numberOfPlaces'] == '47'
+    assert base_club['points'] == '12'
+    assert base_competition['numberOfPlaces'] == '47'
