@@ -213,14 +213,16 @@ def validate_booking(competition, club, places_required):
     already_booked = bookings.get(booking_key, 0)
     total_would_be = already_booked + places_required
 
-    if places_required > MAX_PLACES or total_would_be > MAX_PLACES:
-        if places_required > MAX_PLACES:
-            return f"Cannot book more than {MAX_PLACES} places at once"
-        else:
-            return (
-                f"Cannot book more than {MAX_PLACES} places "
-                "in total for this competition"
-            )
+    # 5. Vérifier d'abord la limite par réservation unique
+    if places_required > MAX_PLACES:
+        return f"Cannot book more than {MAX_PLACES} places at once"
+
+    # 6. Ensuite vérifier la limite totale
+    if total_would_be > MAX_PLACES:
+        return (
+            f"Cannot book more than {MAX_PLACES} places "
+            "in total for this competition"
+        )
 
     return None  # Pas d'erreur
 
